@@ -6,6 +6,28 @@
 - JS bot detection
 - flows
 
+## JS Bot Detection
+
+This is an additional verification stage that runs in the visitor's browser. Before black content is shown, the page loads the `js/detect.js` script, which executes the selected tests and requests the real content only after all of them pass.
+
+When any test fails, the content is never requested, the visitor stays on the white page, and the click is stored in Blocked clicks with a reason equal to the failed test name (for example, `browserscreen`), or `timeout` if an interactive test received no visitor action in time.
+
+Tests come in two kinds:
+
+- **Non-interactive** run instantly on page load and require no visitor participation.
+- **Interactive** wait for a real visitor action until **Timeout** expires. Every enabled interactive test must pass: content is requested only when all of them are done.
+
+| Test | Kind | What It Checks |
+| --- | --- | --- |
+| **Mouse click / Touch start** (`pointerdown`) | Interactive | A real mouse click or screen touch. Bots without user input emulation are cut off by the timeout. |
+| **Text typing** (`keydown`) | Interactive | Any key press. Suitable for desktop traffic; causes false positives on mobile traffic without keyboard input. |
+| **Device motion** (`devicemotion`) | Interactive, Android only | Real accelerometer reading changes. Passes automatically on non-Android devices, so it does not disturb desktop and iOS traffic. |
+| **Device orientation** (`deviceorientation`) | Interactive, Android only | Real gyroscope reading changes. Passes automatically on non-Android devices. |
+| **Audio engine existence** (`audiocontext`) | Non-interactive | Presence of `AudioContext`. A missing audio stack is typical for stripped-down headless environments and emulators. |
+| **Time zone** (`timezone`) | Non-interactive | The browser's timezone offset must fall within the **Minimum/Maximum allowed timezone** range. Catches bots whose server timezone does not match the campaign GEO. The range fields are shown only while this test is enabled. |
+| **Browser screen** (`browserscreen`) | Non-interactive | Screen presence and size consistency. Failure means: zero browser window size (`outerWidth`/`outerHeight` — a typical sign of headless without window emulation), zero `screen.width`/`screen.height`, or a viewport wider than the physical screen. |
+| **WebDriver automation** (`webdriver`) | Non-interactive | The `navigator.webdriver` flag, which the browser sets when driven via CDP/WebDriver (Puppeteer, Playwright, Selenium without stealth). Also verifies that the flag getter is not rewritten by a JS wrapper — this catches bots that suppressed the flag with a stealth plugin. |
+
 ## Flows
 
 A flow contains:

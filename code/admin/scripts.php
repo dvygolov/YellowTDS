@@ -20,5 +20,6 @@ $sTime = filemtime($jsFsPath . '/settings.js');
 ?>
 <script src="<?=$jsPath?>/tabulator.js?v=<?=$tTime?>"></script>
 <script src="<?=$jsPath?>/campeditor.js?v=<?=$cTime?>"></script>
+<script src="<?=$jsPath?>/matrix-rain.js?v=<?= filemtime($jsFsPath . '/matrix-rain.js') ?>"></script>
 <script src="<?=$jsPath?>/header.js?v=<?=$hTime?>"></script>
 <script src="<?=$jsPath?>/settings.js?v=<?=$sTime?>"></script>

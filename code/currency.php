@@ -10,7 +10,7 @@ class CurrencyRateManager
 
     private static function cacheDir(): string
     {
-        return self::absolutePath(get_cache_path('currency'));
+        return cache_absolute_path(get_cache_path('currency'));
     }
 
     private static function cacheFile(): string
@@ -18,18 +18,9 @@ class CurrencyRateManager
         return self::cacheDir() . '/rates.json';
     }
 
-    private static function absolutePath(string $path): string
-    {
-        $isAbsolute = (DIRECTORY_SEPARATOR === '\\')
-            ? preg_match('/^[A-Za-z]:[\/\\\\]/', $path) === 1 || str_starts_with($path, '\\\\')
-            : str_starts_with($path, '/');
-        return $isAbsolute ? str_replace('\\', '/', $path) : __DIR__ . '/' . $path;
-    }
-
     public static function isCacheFresh(): bool
     {
-        $file = self::cacheFile();
-        return file_exists($file) && filemtime($file) > (time() - self::CACHE_TTL);
+        return read_json_cache(self::cacheFile(), self::CACHE_TTL) !== null;
     }
 
     public static function refreshIfStale(): bool
@@ -100,10 +91,6 @@ class CurrencyRateManager
             return false;
         }
 
-        if (!is_dir(self::cacheDir())) {
-            mkdir(self::cacheDir(), 0755, true);
-        }
-
         $payload = [
             'generatedAt' => time(),
             'ttl' => self::CACHE_TTL,
@@ -111,13 +98,7 @@ class CurrencyRateManager
             'sources' => array_keys($sourceRates),
             'errors' => $errors,
         ];
-        $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        if ($json === false) {
-            add_error_log('[currency] Failed to encode rates cache');
-            return false;
-        }
-
-        return file_put_contents(self::cacheFile(), $json, LOCK_EX) !== false;
+        return write_json_cache(self::cacheFile(), $payload);
     }
 
     /**

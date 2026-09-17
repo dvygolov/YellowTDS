@@ -62,15 +62,6 @@ function is_admin_request_path(string $reqPath): bool
     return $reqPath === $adminPath || str_starts_with($reqPath, $adminPath . '/');
 }
 
-function get_admin_base_url(bool $withPrefix = true, bool $withSlashEnd = true): string
-{
-    $url = rtrim(get_tds_path($withPrefix, true), '/') . '/' . get_admin_path_segment();
-    if ($withSlashEnd) {
-        return $url . '/';
-    }
-    return $url;
-}
-
 function get_admin_url_path(bool $withSlashEnd = true): string
 {
     return rtrim(get_tds_url_path(), '/') . '/' . get_admin_path_segment() . ($withSlashEnd ? '/' : '');

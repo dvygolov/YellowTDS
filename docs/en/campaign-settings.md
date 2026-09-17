@@ -34,6 +34,8 @@ On save, YellowTDS automatically writes `caching/runtime/domains.php` and the co
 
 Defines what blocked or filtered traffic receives. The `−/+` control beside **Safe Page** collapses or expands the domain-specific pages in the sidebar. It appears as soon as Domain-Specific mode is selected, and navigating to a domain page expands the branch automatically.
 
+The Redirect, Curl and HTTP Code lists support up to five entries and keep at least one row. New rows start with an empty value; deleting a row preserves the other values. Backfix supports up to ten URLs and allows an empty list.
+
 ## Flows
 
 Defines the black branch routing for allowed traffic.

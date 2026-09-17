@@ -21,10 +21,12 @@ class BotDetector {
       DEVICEMOTION: 'devicemotion',
       DEVICEORIENTATION: 'deviceorientation',
       TIMEZONE: 'timezone',
-      AUDIOCONTEXT: 'audiocontext'
+      AUDIOCONTEXT: 'audiocontext',
+      BROWSERSCREEN: 'browserscreen',
+      WEBDRIVER: 'webdriver'
     };
 
-    this.nonInteractiveTests = [this.Tests.TIMEZONE, this.Tests.AUDIOCONTEXT];
+    this.nonInteractiveTests = [this.Tests.TIMEZONE, this.Tests.AUDIOCONTEXT, this.Tests.BROWSERSCREEN, this.Tests.WEBDRIVER];
     this.interactiveTestNames = [this.Tests.KEYDOWN, this.Tests.POINTERDOWN, this.Tests.DEVICEMOTION, this.Tests.DEVICEORIENTATION];
   }
 
@@ -49,6 +51,22 @@ class BotDetector {
       this.log('Checking audio context...');
       if (!this.checkAudioContext()) {
         this.failTest('audiocontext');
+        return false;
+      }
+    }
+
+    if (this.selectedTests.includes(this.Tests.BROWSERSCREEN)) {
+      this.log('Checking browser screen...');
+      if (!this.checkBrowserScreen()) {
+        this.failTest('browserscreen');
+        return false;
+      }
+    }
+
+    if (this.selectedTests.includes(this.Tests.WEBDRIVER)) {
+      this.log('Checking webdriver flag...');
+      if (!this.checkWebDriver()) {
+        this.failTest('webdriver');
         return false;
       }
     }
@@ -156,6 +174,46 @@ class BotDetector {
       return true;
     } catch (e) {
       this.log('Audio context failed: ' + e);
+      return false;
+    }
+  }
+
+  checkBrowserScreen() {
+    try {
+      if (window.outerWidth === 0 || window.outerHeight === 0) {
+        this.log('No outer window size, looks headless!');
+        return false;
+      }
+      if (window.screen.width === 0 || window.screen.height === 0) {
+        this.log('Screen size is zero!');
+        return false;
+      }
+      if (window.innerWidth > window.screen.width) {
+        this.log('Viewport wider than screen, impossible combo!');
+        return false;
+      }
+      return true;
+    } catch (e) {
+      this.log('Browser screen check failed: ' + e);
+      return false;
+    }
+  }
+
+  checkWebDriver() {
+    try {
+      if (navigator.webdriver) {
+        this.log('navigator.webdriver is set, browser is automated!');
+        return false;
+      }
+      const desc = Object.getOwnPropertyDescriptor(Navigator.prototype, 'webdriver');
+      // ponytail: stealth plugins can also patch Function.prototype.toString to fake "[native code]"; upgrade path is toString checks on several unrelated native functions
+      if (desc && desc.get && !/\[native code\]/.test(Function.prototype.toString.call(desc.get))) {
+        this.log('webdriver getter is patched, stealth automation!');
+        return false;
+      }
+      return true;
+    } catch (e) {
+      this.log('Webdriver check failed: ' + e);
       return false;
     }
   }

@@ -24,7 +24,7 @@ final class PublicUrlTest extends TestCase
             foreach ($cases as [$vars, $origin]) {
                 foreach (['', '/tools/tds'] as $base) {
                     $_SERVER = $vars + ['SCRIPT_NAME' => $base . '/private-panel/login.php'];
-                    self::assertSame($origin . $base . '/private-panel/', get_admin_base_url());
+                    self::assertSame($origin . $base . '/', get_tds_path());
                     self::assertSame($base . '/private-panel/', get_admin_url_path());
                     self::assertSame($base . '/', get_tds_url_path());
                 }

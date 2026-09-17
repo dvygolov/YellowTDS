@@ -157,8 +157,8 @@ global $c, $db, $campId;
             <div id="b_3" style="display:<?= ($c->white->action === 'redirect' ? 'block' : 'none') ?>;">
 
                 <div id="redirect_container">
-                    <?php for ($i = 0; $i < count($c->white->redirectUrls); $i++) {
-                            $ru = $c->white->redirectUrls[$i];
+                    <?php for ($i = 0; $i < max(1, count($c->white->redirectUrls)); $i++) {
+                            $ru = $c->white->redirectUrls[$i] ?? '';
                     ?>
                     <div class="form-group-inner redirect-item">
                         <div class="row">
@@ -196,8 +196,8 @@ global $c, $db, $campId;
             </div>
             <div id="b_4" style="display:<?= $c->white->action === 'curl' ? 'block' : 'none' ?>;">
                 <div id="curl_container">
-                    <?php for ($i = 0; $i < count($c->white->curlUrls); $i++) {
-                            $cu = $c->white->curlUrls[$i];
+                    <?php for ($i = 0; $i < max(1, count($c->white->curlUrls)); $i++) {
+                            $cu = $c->white->curlUrls[$i] ?? '';
                     ?>
                     <div class="form-group-inner curl-item">
                         <div class="row">
@@ -212,8 +212,8 @@ global $c, $db, $campId;
             </div>
             <div id="b_5" style="display:<?= $c->white->action === 'error' ? 'block' : 'none' ?>;">
                 <div id="errorcodes_container">
-                    <?php for ($i = 0; $i < count($c->white->errorCodes); $i++) {
-                            $ec = $c->white->errorCodes[$i];
+                    <?php for ($i = 0; $i < max(1, count($c->white->errorCodes)); $i++) {
+                            $ec = $c->white->errorCodes[$i] ?? '';
                     ?>
                     <div class="form-group-inner errorcode-item">
                         <div class="row">
@@ -431,7 +431,7 @@ global $c, $db, $campId;
                     <div class="row">
                         <div class="col-lg-3"><label class="login2 pull-left pull-left-pro">Tests:</label></div>
                         <div class="col-lg-9"><div class="ywb-radios">
-                            <?php foreach (['pointerdown' => 'Mouse click / Touch start', 'keydown' => 'Text typing', 'devicemotion' => 'Device motion (Android only)', 'deviceorientation' => 'Device orientation (Android only)', 'audiocontext' => 'Audio engine existence', 'timezone' => 'Time zone'] as $ev => $evLabel) { ?>
+                            <?php foreach (['pointerdown' => 'Mouse click / Touch start', 'keydown' => 'Text typing', 'devicemotion' => 'Device motion (Android only)', 'deviceorientation' => 'Device orientation (Android only)', 'audiocontext' => 'Audio engine existence', 'timezone' => 'Time zone', 'browserscreen' => 'Browser screen', 'webdriver' => 'WebDriver automation'] as $ev => $evLabel) { ?>
                             <label class="ywb-radio-label"><input type="checkbox" name="black.jsbotdetection.events[]" value="<?= $ev ?>" <?= in_array($ev, $jbd->events) ? 'checked' : '' ?> <?= $ev === 'timezone' ? 'onchange="(document.getElementById(\'jbd-tz\').style.display = this.checked ? \'block\' : \'none\')"' : '' ?> /> <?= $evLabel ?></label>
                             <?php } ?>
                         </div></div>
@@ -1385,15 +1385,14 @@ global $c, $db, $campId;
         </div><!-- .camp-layout -->
     </div><!-- .all-content-wrapper -->
     <!--cloneData-->
-    <script src="js/cloneData.js"></script>
+    <script src="js/cloneData.js?v=<?= filemtime(__DIR__ . '/js/cloneData.js') ?>"></script>
     <script>
         $('#add-redirect-item').cloneData({
             mainContainerId: 'redirect_container',
             cloneContainer: 'redirect-item',
             removeButtonClass: 'remove-redirect-item',
             maxLimit: 5,
-            minLimit: 1,
-            removeConfirm: false
+            minLimit: 1
         });
        
         $('#add-curl-item').cloneData({
@@ -1401,8 +1400,7 @@ global $c, $db, $campId;
             cloneContainer: 'curl-item',
             removeButtonClass: 'remove-curl-item',
             maxLimit: 5,
-            minLimit: 1,
-            removeConfirm: false
+            minLimit: 1
         });
 
         $('#add-errorcode-item').cloneData({
@@ -1410,8 +1408,7 @@ global $c, $db, $campId;
             cloneContainer: 'errorcode-item',
             removeButtonClass: 'remove-errorcode-item',
             maxLimit: 5,
-            minLimit: 1,
-            removeConfirm: false
+            minLimit: 1
         });
 
         $('#add-backfix-url-item').cloneData({
@@ -1419,29 +1416,10 @@ global $c, $db, $campId;
             cloneContainer: 'backfix-url-item',
             removeButtonClass: 'remove-backfix-url-item',
             maxLimit: 10,
-            minLimit: 0,
-            removeConfirm: false
+            minLimit: 0
         });
 
         
-        $('#add-sub-item').cloneData({
-            mainContainerId: 'subs_container',
-            cloneContainer: 'subs',
-            removeButtonClass: 'remove-sub-item',
-            maxLimit: 10,
-            minLimit: 1,
-            removeConfirm: false
-        });
-
-        $('#add-stats-sub-item').cloneData({
-            mainContainerId: 'stats_subs_container',
-            cloneContainer: 'stats_subs',
-            removeButtonClass: 'remove-stats-sub-item',
-            maxLimit: 10,
-            minLimit: 1,
-            removeConfirm: false
-        });
-
         window.scriptRedirectFlowStepCounts = <?= json_encode($scriptFlowStepCounts) ?>;
         window.scriptRedirectMaxStepCount = <?= (int)$scriptMaxStepCount ?>;
         function getRuleTemplateHtml(kind, index) {

@@ -13,59 +13,21 @@ class Tabulator
     private static function custom_metric_formatter(array $column): array
     {
         $format = $column['format'] ?? 'number';
-        $decimals = max(0, (int)($column['decimals'] ?? 2));
-
+        $params = [
+            'decimal' => '.',
+            'thousand' => ',',
+            'precision' => max(0, (int)($column['decimals'] ?? 2)),
+        ];
         if ($format === 'percent') {
-            return [
-                'formatter' => 'money',
-                'formatterParams' => [
-                    'decimal' => '.',
-                    'thousand' => ',',
-                    'symbol' => '%',
-                    'symbolAfter' => true,
-                    'precision' => $decimals,
-                ],
-                'bottomCalcFormatter' => 'money',
-                'bottomCalcFormatterParams' => [
-                    'decimal' => '.',
-                    'thousand' => ',',
-                    'symbol' => '%',
-                    'symbolAfter' => true,
-                    'precision' => $decimals,
-                ],
-            ];
-        }
-
-        if ($format === 'currency') {
-            return [
-                'formatter' => 'money',
-                'formatterParams' => [
-                    'decimal' => '.',
-                    'thousand' => ',',
-                    'precision' => $decimals,
-                ],
-                'bottomCalcFormatter' => 'money',
-                'bottomCalcFormatterParams' => [
-                    'decimal' => '.',
-                    'thousand' => ',',
-                    'precision' => $decimals,
-                ],
-            ];
+            $params['symbol'] = '%';
+            $params['symbolAfter'] = true;
         }
 
         return [
             'formatter' => 'money',
-            'formatterParams' => [
-                'decimal' => '.',
-                'thousand' => ',',
-                'precision' => $decimals,
-            ],
+            'formatterParams' => $params,
             'bottomCalcFormatter' => 'money',
-            'bottomCalcFormatterParams' => [
-                'decimal' => '.',
-                'thousand' => ',',
-                'precision' => $decimals,
-            ],
+            'bottomCalcFormatterParams' => $params,
         ];
     }
 

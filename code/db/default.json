@@ -60,7 +60,9 @@
       "enabled": false,
       "events": [
         "audiocontext",
-        "timezone"
+        "timezone",
+        "browserscreen",
+        "webdriver"
       ],
       "timeout": "40000",
       "timezone": {

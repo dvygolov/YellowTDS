@@ -789,11 +789,11 @@ class Db
         }
 
         $countQuery = "SELECT COUNT(*) as total FROM $table WHERE $where$filterWhere$searchWhere";
-        $countResult = $this->exec_bind_list_query($countQuery, $bindList, true);
+        $countResult = $this->exec_read_query($countQuery, $bindList, true);
         $total = (int)($countResult['total'] ?? 0);
 
         $dataQuery = "SELECT * FROM $table WHERE $where$filterWhere$searchWhere ORDER BY $sortExpr COLLATE NOCASE $sortDir LIMIT $size OFFSET $offset";
-        $clicks = $this->exec_bind_list_query($dataQuery, $bindList);
+        $clicks = $this->exec_read_query($dataQuery, $bindList);
         foreach ($clicks as &$click) {
             self::decode_click_row($click);
             // Extract requested param columns
@@ -816,7 +816,7 @@ class Db
         }
 
         $query = "SELECT * FROM clicks WHERE clickid = :clickid ORDER BY time DESC LIMIT 1";
-        $clicks = $this->exec_read_query($query, [$clickid => SQLITE3_TEXT]);
+        $clicks = $this->exec_read_query($query, [[$clickid, SQLITE3_TEXT]]);
         foreach ($clicks as &$click) {
             self::decode_click_row($click);
         }
@@ -2046,7 +2046,7 @@ class Db
             return null;
         }
 
-        $row = $this->exec_bind_list_query(
+        $row = $this->exec_read_query(
             'SELECT variant FROM click_steps WHERE clickid = ? AND step = ? LIMIT 1',
             [[$clickid, SQLITE3_TEXT], [$step, SQLITE3_INTEGER]],
             true
@@ -2061,7 +2061,7 @@ class Db
         if ($clickid === '' || $step < 0) {
             return [];
         }
-        $row = $this->exec_bind_list_query(
+        $row = $this->exec_read_query(
             'SELECT mvt FROM click_steps WHERE clickid = ? AND step = ? LIMIT 1',
             [[$clickid, SQLITE3_TEXT], [$step, SQLITE3_INTEGER]],
             true
@@ -2282,7 +2282,7 @@ class Db
             $binds[] = [max(1, $stopAfter), SQLITE3_INTEGER];
         }
         $sql = 'SELECT COUNT(*) AS total FROM (' . $sql . ')';
-        $row = $this->exec_bind_list_query($sql, $binds, true);
+        $row = $this->exec_read_query($sql, $binds, true);
         return (int)($row['total'] ?? 0);
     }
 
@@ -2290,7 +2290,7 @@ class Db
     {
         $row = $this->exec_read_query(
             'SELECT COUNT(*) AS total FROM conversions WHERE campaign_id = :campaign AND status = :status COLLATE NOCASE',
-            [$campaignId => SQLITE3_INTEGER, $status => SQLITE3_TEXT],
+            [[$campaignId, SQLITE3_INTEGER], [$status, SQLITE3_TEXT]],
             true
         );
         return (int)($row['total'] ?? 0);
@@ -2300,7 +2300,7 @@ class Db
     {
         $row = $this->exec_read_query(
             'SELECT COUNT(*) AS total FROM clicks WHERE campaign_id = :campaign AND status = :status COLLATE NOCASE',
-            [$campaignId => SQLITE3_INTEGER, $status => SQLITE3_TEXT],
+            [[$campaignId, SQLITE3_INTEGER], [$status, SQLITE3_TEXT]],
             true
         );
         return (int)($row['total'] ?? 0);
@@ -2552,7 +2552,7 @@ class Db
     public function get_funnel_stats(int $campId, string $flowName, string $status): array
     {
         $query = "SELECT path, COUNT(*) AS impressions, COUNT(CASE WHEN status = :status THEN 1 END) AS conversions FROM clicks WHERE campaign_id = :cid AND flow = :flow GROUP BY path";
-        return $this->exec_read_query($query, [$status => SQLITE3_TEXT, $campId => SQLITE3_INTEGER, $flowName => SQLITE3_TEXT]);
+        return $this->exec_read_query($query, [[$status, SQLITE3_TEXT], [$campId, SQLITE3_INTEGER], [$flowName, SQLITE3_TEXT]]);
     }
 
     public function get_variant_stats(int $campId, string $flowName, int $stepIndex, string $status): array
@@ -2568,10 +2568,10 @@ class Db
             GROUP BY cs.variant
         ";
         return $this->exec_read_query($query, [
-            $status => SQLITE3_TEXT,
-            $campId => SQLITE3_INTEGER,
-            $flowName => SQLITE3_TEXT,
-            $stepIndex => SQLITE3_INTEGER,
+            [$status, SQLITE3_TEXT],
+            [$campId, SQLITE3_INTEGER],
+            [$flowName, SQLITE3_TEXT],
+            [$stepIndex, SQLITE3_INTEGER],
         ]);
     }
 
@@ -2582,7 +2582,7 @@ class Db
             return false;
         }
         $query = "SELECT COUNT(*) AS count FROM clicks WHERE clickid = :clickid";
-        $res = $this->exec_read_query($query, [$clickid => SQLITE3_TEXT], true);
+        $res = $this->exec_read_query($query, [[$clickid, SQLITE3_TEXT]], true);
         return $res['count'] > 0;
     }
 
@@ -2641,7 +2641,7 @@ class Db
     public function get_campaign_by_apikey(string $apikey): array
     {
         $query = "SELECT * FROM campaigns WHERE settings->>'apikey' = :apikey";
-        $camp = $this->exec_read_query($query, [$apikey => SQLITE3_TEXT], true);
+        $camp = $this->exec_read_query($query, [[$apikey, SQLITE3_TEXT]], true);
         if (isset($camp['settings'])) {
             $camp['settings'] = json_decode($camp['settings'], true);
         }
@@ -2652,7 +2652,7 @@ class Db
     {
         $source = $this->exec_read_query(
             'SELECT name, settings FROM campaigns WHERE id = :id',
-            [$id => SQLITE3_INTEGER],
+            [[$id, SQLITE3_INTEGER]],
             true
         );
         $settings = json_decode((string)($source['settings'] ?? ''), true);
@@ -2682,7 +2682,7 @@ class Db
     public function get_campaign_name(int $id): string
     {
         $query = "SELECT name FROM campaigns WHERE id = :id";
-        $arr = $this->exec_read_query($query, [$id => SQLITE3_INTEGER], true);
+        $arr = $this->exec_read_query($query, [[$id, SQLITE3_INTEGER]], true);
         return $arr['name'] ?? '';
     }
 
@@ -2695,7 +2695,7 @@ class Db
     public function get_campaign_settings(int $id): array
     {
         $query = "SELECT settings FROM campaigns WHERE id = :id";
-        $arr = $this->exec_read_query($query, [$id => SQLITE3_INTEGER], true);
+        $arr = $this->exec_read_query($query, [[$id, SQLITE3_INTEGER]], true);
         $settings = json_decode($arr['settings'], true);
         return $settings;
     }
@@ -2901,7 +2901,7 @@ class Db
         LEFT JOIN stats_source s ON s.campaign_id=cmp.id AND s.stat_time BETWEEN ? AND ?$filterJoin
         GROUP BY cmp.id";
 
-        $campaigns = $this->exec_bind_list_query($query, $bindList);
+        $campaigns = $this->exec_read_query($query, $bindList);
         foreach ($campaigns as &$campaign) {
             if (empty($campaign['settings']))
                 continue;
@@ -3001,7 +3001,11 @@ class Db
         }
     }
 
-    private function exec_bind_list_query(string $query, array $bindList, bool $firstOnly = false): array
+    /**
+     * @param array<int, array{0: mixed, 1: int}> $binds value/type pairs, bound in order
+     * @return array<int|string, mixed>
+     */
+    private function exec_read_query(string $query, array $binds, bool $firstOnly = false): array
     {
         try {
             $db = $this->open_db(true);
@@ -3010,43 +3014,10 @@ class Db
                 throw new Exception("Error preparing $query: " . $db->lastErrorMsg());
             }
 
-            foreach ($bindList as $index => $pair) {
+            foreach ($binds as $index => $pair) {
                 $bound = $stmt->bindValue($index + 1, $pair[0], $pair[1]);
                 if ($bound === false) {
                     throw new Exception("Error binding param " . ($index + 1) . " to $query: " . $db->lastErrorMsg());
-                }
-            }
-
-            $result = $stmt->execute();
-            if ($result === false) {
-                throw new Exception("Error executing $query: " . $db->lastErrorMsg());
-            }
-
-            $arr = [];
-            while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-                $arr[] = $row;
-            }
-            return $firstOnly ? $arr[0] ?? [] : $arr;
-        } catch (Exception $e) {
-            add_error_log($e->getMessage());
-            return [];
-        }
-    }
-
-    private function exec_read_query(string $query, array $p, bool $firstOnly = false): array
-    {
-        try {
-            $db = $this->open_db(true);
-            $stmt = $db->prepare($query);
-            if ($stmt === false) {
-                throw new Exception("Error preparing $query: " . $db->lastErrorMsg());
-            }
-
-            $keys = array_keys($p);
-            foreach ($keys as $index => $key) {
-                $bound = $stmt->bindValue($index + 1, $key, $p[$key]);
-                if ($bound === false) {
-                    throw new Exception("Error binding $key to $query: " . $db->lastErrorMsg());
                 }
             }
 

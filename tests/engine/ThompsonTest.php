@@ -33,6 +33,31 @@ class ThompsonTest extends TestCase
         return new Campaign(1, $settings);
     }
 
+    public function testEqualSelectionPreservesStickyAndItemIndexes(): void
+    {
+        $campaign = $this->makeCampaign();
+        $campaign->saveUserFlow = true;
+        $abtest = new AbTest($campaign);
+        $cookies = $_COOKIE;
+        try {
+            $_COOKIE['white'] = 'saved';
+            self::assertSame(['saved', 1], $abtest->select_item(['other', 'saved'], 'white', false));
+            self::assertSame(['only', 0], $abtest->select_item(['only'], 'white', false));
+
+            $_COOKIE['white'] = 'db';
+            self::assertSame(['db', 1], $abtest->select_item(['admin', 'db'], 'white', true));
+
+            $campaign->saveUserFlow = false;
+            mt_srand(17);
+            $expected = $abtest->select_distributed(['admin', 'db'], 'white', true, 'equal', []);
+            mt_srand(17);
+            self::assertSame($expected, $abtest->select_item(['admin', 'db'], 'white', true));
+        } finally {
+            $_COOKIE = $cookies;
+            mt_srand();
+        }
+    }
+
     // ── random_beta returns values in [0,1] ──
 
     public function testRandomBetaRange(): void

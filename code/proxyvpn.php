@@ -156,7 +156,7 @@ class ProxyVpnDetector
 
     private static function cacheDir(): string
     {
-        return self::absolutePath(get_cache_path('proxyvpn'));
+        return cache_absolute_path(get_cache_path('proxyvpn'));
     }
 
     private static function cacheFile(string $cacheKey): string
@@ -164,43 +164,21 @@ class ProxyVpnDetector
         return self::cacheDir() . '/' . $cacheKey . '.json';
     }
 
-    private static function absolutePath(string $path): string
-    {
-        $isAbsolute = (DIRECTORY_SEPARATOR === '\\')
-            ? preg_match('/^[A-Za-z]:[\/\\\\]/', $path) === 1 || str_starts_with($path, '\\\\')
-            : str_starts_with($path, '/');
-        return $isAbsolute ? str_replace('\\', '/', $path) : __DIR__ . '/' . $path;
-    }
-
     private static function readCache(string $cacheKey): ?bool
     {
-        $file = self::cacheFile($cacheKey);
-        if (!file_exists($file) || filemtime($file) <= (time() - self::CACHE_TTL)) {
-            return null;
-        }
-
-        $data = json_decode((string)file_get_contents($file), true);
-        if (!is_array($data) || !array_key_exists('detected', $data)) {
-            return null;
-        }
-
-        return (bool)$data['detected'];
+        $data = read_json_cache(self::cacheFile($cacheKey), self::CACHE_TTL);
+        return is_array($data) && array_key_exists('detected', $data) ? (bool)$data['detected'] : null;
     }
 
     private static function writeCache(string $cacheKey, bool $detected, string $mode, array $details, array $errors): void
     {
-        if (!is_dir(self::cacheDir())) {
-            mkdir(self::cacheDir(), 0755, true);
-        }
-
-        $payload = [
+        write_json_cache(self::cacheFile($cacheKey), [
             'generatedAt' => time(),
             'ttl' => self::CACHE_TTL,
             'mode' => $mode,
             'detected' => $detected,
             'details' => $details,
             'errors' => $errors,
-        ];
-        file_put_contents(self::cacheFile($cacheKey), json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
+        ]);
     }
 }

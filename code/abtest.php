@@ -13,20 +13,7 @@ class AbTest
 
     public function select_item(array $items, string $item_type, bool $is_folder): array
     {
-        if (empty($items))
-            add_error_log("No items found for $item_type in campaign {$this->campaign->campaignId}!", false, true);
-
-        $item = '';
-
-        if ($this->campaign->saveUserFlow && !str_starts_with($item_type, 'step_')) {
-            $item = $this->get_saved_item($item_type, $items, $is_folder);
-        }
-
-        if ($item === '') {
-            $item = $this->get_random_item($items);
-        }
-
-        return [$item, array_search($item, $items)];
+        return $this->select_distributed($items, $item_type, $is_folder, 'equal', []);
     }
 
     private function get_saved_item(string $item_type, array $items, bool $is_folder): string

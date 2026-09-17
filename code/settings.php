@@ -396,12 +396,6 @@ final class SettingsManager
                 $operations[] = ['type' => 'rename', 'from' => $oldAdmin, 'to' => $newAdmin];
             }
         }
-        if (!in_array((string)($next['timezone'] ?? ''), DateTimeZone::listIdentifiers(), true)) {
-            $errors['timezone'] = 'Select a valid timezone';
-        }
-        if (!in_array((string)($next['conversionAttribution'] ?? ''), ['click_time', 'conversion_time'], true)) {
-            $errors['conversionAttribution'] = 'Select Click time or Conversion time';
-        }
         if (!is_int($next['logRetentionDays'] ?? null) && !is_numeric($next['logRetentionDays'] ?? null)) {
             $errors['logRetentionDays'] = 'Must be a whole number';
         } else {
@@ -602,4 +596,36 @@ function get_cache_path(string $subdirectory): string
         throw new InvalidArgumentException('Unknown cache subdirectory');
     }
     return rtrim((string)$cloSettings['cachingDir'], '/\\') . '/' . $subdirectory;
+}
+
+function cache_absolute_path(string $path): string
+{
+    $isAbsolute = (DIRECTORY_SEPARATOR === '\\')
+        ? preg_match('/^[A-Za-z]:[\/\\\\]/', $path) === 1 || str_starts_with($path, '\\\\')
+        : str_starts_with($path, '/');
+    return $isAbsolute ? str_replace('\\', '/', $path) : __DIR__ . '/' . $path;
+}
+
+/** @return array<string, mixed>|null null when missing, stale or not a JSON object */
+function read_json_cache(string $path, int $ttlSeconds, ?int $now = null): ?array
+{
+    if (!is_file($path)) {
+        return null;
+    }
+    $now ??= time();
+    if (filemtime($path) <= $now - $ttlSeconds) {
+        return null;
+    }
+    $data = json_decode((string)file_get_contents($path), true);
+    return is_array($data) ? $data : null;
+}
+
+function write_json_cache(string $path, array $payload): bool
+{
+    $directory = dirname($path);
+    if (!is_dir($directory)) {
+        mkdir($directory, 0755, true);
+    }
+    $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    return $json !== false && file_put_contents($path, $json, LOCK_EX) !== false;
 }
