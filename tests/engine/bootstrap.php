@@ -17,6 +17,7 @@ $GLOBALS['cloSettings'] = [
     'adminDomain' => '',
     'adminIp' => '',
     'adminPath' => 'admin',
+    'apiKey' => '',
     'dbConnection' => 'test_dummy.db',
     'useUTP' => false,
     'debug' => false,

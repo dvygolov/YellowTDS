@@ -7,9 +7,26 @@
 - `api/phpconnect.php`
 - `api/postback.php`
 - `api/conversion.php`
+- `api/manage.php`
 - `send.php`
 - `next.php`
 - `api/updateparams.php`
+
+## Management API
+
+`api/manage.php` — скрытый JSON API для серверных интеграций. Глобальный ключ задаётся в Settings → Security. Пустой ключ выключает API. Ключ передаётся заголовком `X-Ytds-Key` или `Authorization: Bearer`, либо полем `key` в JSON. Без ключа, с неверным ключом и для не-POST запросов ответ — `404 Not Found`. В Debug mode те же ошибки возвращаются JSON.
+
+Тело запроса — JSON с полем `action`:
+
+- `click.get` — `{clickid}` или `{subid}`
+- `click.update` — `{clickid, params?, cost?}`. `params` мержатся, `cost` заменяет расход клика. `null` в params удаляет метку.
+- `cost.distribute` — `{campaign_id, from, to, amount, filters?}`. Размазывает сумму поровну по кликам периода. `from`/`to` — `YYYY-MM-DD` в timezone кампании или unix timestamp. Фильтр меток: `{"params":{"utm_campaign":"fb"}}`.
+- `campaigns.list` — `[{id, name}]`
+- `stats.get` — `{campaign_id, from, to, columns?, groupby?, filters?}`. Обёртка над статистикой кампании.
+
+Это не CRUD кампаний и не замена postback.
+
+`api/updateparams.php` остаётся публичным GET-пикселем с лендинга: обновляет только метки по `clickid`, расход не принимает. Ошибки вне Debug mode маскируются как `404 Not Found`.
 
 ## Endpoints конверсий
 

@@ -182,6 +182,26 @@
     font-weight: 600;
 }
 
+.settings-field-wide {
+    grid-column: 1 / -1;
+}
+
+.settings-key-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.settings-key-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.settings-key-row .btn {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 .settings-field input,
 .settings-field select,
 .settings-inline-field select,

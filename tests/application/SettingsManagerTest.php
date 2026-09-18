@@ -39,6 +39,7 @@ class SettingsManagerTest extends TestCase
     {
         $settings = $this->manager->load();
         $this->assertSame('admin', $settings['adminPath']);
+        $this->assertSame('', $settings['apiKey']);
         $this->assertSame(30, $settings['logRetentionDays']);
         $this->assertSame('Europe/Moscow', $settings['timezone']);
         $this->assertSame('click_time', $settings['conversionAttribution']);
@@ -59,6 +60,23 @@ class SettingsManagerTest extends TestCase
         $this->assertSame('', $output);
         $this->assertSame('plain-secret', $payload['adminPassword']);
         $this->assertSame('', $this->manager->adminPayload($saved['settings'])['adminPassword']);
+    }
+
+    public function testApiKeyIsValidatedAndReturnedToAdmin(): void
+    {
+        $settings = $this->manager->load();
+        $settings['apiKey'] = 'short';
+        try {
+            $this->manager->save($settings, 0, $this->catalog);
+            $this->fail('Expected validation exception');
+        } catch (SettingsValidationException $e) {
+            $this->assertArrayHasKey('apiKey', $e->errors);
+        }
+
+        $settings['apiKey'] = '0123456789abcdef0123456789abcdef';
+        $saved = $this->manager->save($settings, 0, $this->catalog);
+        $this->assertSame('0123456789abcdef0123456789abcdef', $saved['settings']['apiKey']);
+        $this->assertSame('0123456789abcdef0123456789abcdef', $this->manager->adminPayload($saved['settings'])['apiKey']);
     }
 
     public function testStaleRevisionIsRejected(): void

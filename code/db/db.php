@@ -2323,6 +2323,102 @@ class Db
         return $this->exec_update_query($updateQuery, [$paramsJson => SQLITE3_TEXT, $clickId => SQLITE3_INTEGER]);
     }
 
+    public function update_click_fields(int $clickId, ?array $params = null, ?float $cost = null): bool
+    {
+        if ($clickId <= 0 || ($params === null && $cost === null)) {
+            return false;
+        }
+
+        $sets = [];
+        if ($params !== null) {
+            $sets[] = 'params = :params';
+        }
+        if ($cost !== null) {
+            $sets[] = 'cost = :cost';
+        }
+
+        try {
+            $db = $this->open_db();
+            $stmt = $db->prepare('UPDATE clicks SET ' . implode(', ', $sets) . ' WHERE id = :id');
+            if ($stmt === false) {
+                throw new Exception('Failed to prepare click field update: ' . $db->lastErrorMsg());
+            }
+            if ($params !== null) {
+                $paramsJson = json_encode($params);
+                if ($paramsJson === false) {
+                    throw new Exception('Failed to encode params to JSON for click ID: ' . $clickId);
+                }
+                $stmt->bindValue(':params', $paramsJson, SQLITE3_TEXT);
+            }
+            if ($cost !== null) {
+                $stmt->bindValue(':cost', $cost, SQLITE3_FLOAT);
+            }
+            $stmt->bindValue(':id', $clickId, SQLITE3_INTEGER);
+            if ($stmt->execute() === false) {
+                throw new Exception('Failed to update click fields for ID: ' . $clickId);
+            }
+            return true;
+        } catch (Exception $e) {
+            add_log('errors', $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @param array<string, string> $paramEquals
+     * @return array{updated: int, cost_per_click: float}
+     */
+    public function distribute_click_cost(int $campaignId, int $startTs, int $endTs, float $amount, array $paramEquals = []): array
+    {
+        $where = 'campaign_id = :campaign_id AND time BETWEEN :start AND :end';
+        $paramBinds = [];
+        $index = 0;
+        foreach ($paramEquals as $key => $value) {
+            if (!is_string($key) || preg_match('/^[A-Za-z0-9_]+$/', $key) !== 1) {
+                throw new InvalidArgumentException('Invalid cost filter parameter name.');
+            }
+            $placeholder = ':p' . $index;
+            $where .= ' AND json_extract(params, \'$.' . $key . '\') = ' . $placeholder;
+            $paramBinds[$placeholder] = (string)$value;
+            $index++;
+        }
+
+        $bindCommon = static function (SQLite3Stmt $stmt) use ($campaignId, $startTs, $endTs, $paramBinds): void {
+            $stmt->bindValue(':campaign_id', $campaignId, SQLITE3_INTEGER);
+            $stmt->bindValue(':start', $startTs, SQLITE3_INTEGER);
+            $stmt->bindValue(':end', $endTs, SQLITE3_INTEGER);
+            foreach ($paramBinds as $placeholder => $value) {
+                $stmt->bindValue($placeholder, $value, SQLITE3_TEXT);
+            }
+        };
+
+        $db = $this->open_db();
+        $countStmt = $db->prepare('SELECT COUNT(*) AS total FROM clicks WHERE ' . $where);
+        if ($countStmt === false) {
+            throw new RuntimeException('Failed to prepare cost distribution count: ' . $db->lastErrorMsg());
+        }
+        $bindCommon($countStmt);
+        $countResult = $countStmt->execute();
+        $countRow = $countResult === false ? false : $countResult->fetchArray(SQLITE3_ASSOC);
+        $updated = (int)(is_array($countRow) ? ($countRow['total'] ?? 0) : 0);
+        if ($updated === 0) {
+            return ['updated' => 0, 'cost_per_click' => 0.0];
+        }
+
+        $share = $amount / $updated;
+        $updateStmt = $db->prepare('UPDATE clicks SET cost = :cost WHERE ' . $where);
+        if ($updateStmt === false) {
+            throw new RuntimeException('Failed to prepare cost distribution update: ' . $db->lastErrorMsg());
+        }
+        $updateStmt->bindValue(':cost', $share, SQLITE3_FLOAT);
+        $bindCommon($updateStmt);
+        if ($updateStmt->execute() === false) {
+            throw new RuntimeException('Failed to distribute click cost: ' . $db->lastErrorMsg());
+        }
+
+        return ['updated' => $updated, 'cost_per_click' => $share];
+    }
+
     public function save_step_event(
         string $clickid,
         int $stepIndex,

@@ -32,6 +32,7 @@ final class SettingsManager
             'adminDomain' => '',
             'adminIp' => '',
             'adminPath' => 'admin',
+            'apiKey' => '',
             'dbConnection' => 'clicks.db',
             'backupDir' => 'backups',
             'useUTP' => false,
@@ -222,7 +223,7 @@ final class SettingsManager
         }
 
         $errors = [];
-        foreach (['adminPassword', 'adminDomain', 'adminIp', 'adminPath', 'dbConnection', 'backupDir', 'cachingDir', 'timezone', 'conversionAttribution'] as $field) {
+        foreach (['adminPassword', 'adminDomain', 'adminIp', 'adminPath', 'apiKey', 'dbConnection', 'backupDir', 'cachingDir', 'timezone', 'conversionAttribution'] as $field) {
             if (!is_string($next[$field] ?? null)) {
                 $errors[$field] = 'Must be a string';
             } else {
@@ -232,6 +233,9 @@ final class SettingsManager
 
         if (($next['adminPassword'] ?? '') === '') {
             $next['adminPassword'] = (string)$current['adminPassword'];
+        }
+        if (($next['apiKey'] ?? '') !== '' && preg_match('/^[A-Za-z0-9_-]{16,128}$/', (string)$next['apiKey']) !== 1) {
+            $errors['apiKey'] = 'Use 16-128 letters, numbers, underscores or hyphens';
         }
         if (preg_match('/^[A-Za-z0-9_-]{1,64}$/', (string)($next['adminPath'] ?? '')) !== 1) {
             $errors['adminPath'] = 'Use 1-64 letters, numbers, underscores or hyphens';

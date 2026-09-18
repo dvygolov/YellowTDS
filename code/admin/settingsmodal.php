@@ -74,6 +74,15 @@
                             <input type="text" name="adminIp" placeholder="Comma-separated; empty means any IP">
                             <button type="button" class="settings-current-value" id="addCurrentAdminIp" hidden></button>
                         </label>
+                        <div class="settings-field settings-field-wide">
+                            <span>Management API key</span>
+                            <div class="settings-key-row">
+                                <input id="managementApiKey" type="text" name="apiKey" autocomplete="off" spellcheck="false" placeholder="Empty disables the API">
+                                <button type="button" class="btn btn-secondary" id="generateApiKey">Generate</button>
+                                <button type="button" class="btn btn-secondary" id="copyApiKey">Copy</button>
+                            </div>
+                            <small>Used by <code>api/manage.php</code>. Empty disables it. Requests without this key return 404 unless Debug mode is on.</small>
+                        </div>
                     </div>
                 </section>
 

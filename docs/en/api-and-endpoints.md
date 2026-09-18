@@ -7,9 +7,26 @@
 - `api/phpconnect.php`
 - `api/postback.php`
 - `api/conversion.php`
+- `api/manage.php`
 - `send.php`
 - `next.php`
 - `api/updateparams.php`
+
+## Management API
+
+`api/manage.php` is a hidden JSON API for server-side integrations. The global key is set in Settings → Security. An empty key disables the API. Send it as `X-Ytds-Key`, `Authorization: Bearer`, or JSON `key`. Requests without a valid key, and non-POST requests, return `404 Not Found`. Debug mode returns JSON errors instead.
+
+The JSON body must include `action`:
+
+- `click.get` — `{clickid}` or `{subid}`
+- `click.update` — `{clickid, params?, cost?}`. `params` are merged; `cost` replaces the click cost. A `null` param value deletes that token.
+- `cost.distribute` — `{campaign_id, from, to, amount, filters?}`. Splits the amount evenly across matching clicks. `from`/`to` are `YYYY-MM-DD` in the campaign timezone or unix timestamps. Token filter: `{"params":{"utm_campaign":"fb"}}`.
+- `campaigns.list` — `[{id, name}]`
+- `stats.get` — `{campaign_id, from, to, columns?, groupby?, filters?}`. Read-only campaign statistics.
+
+This is not campaign CRUD and does not replace postbacks.
+
+`api/updateparams.php` remains a public landing-page GET pixel: it updates tokens by `clickid` and never writes cost. Outside Debug mode, failures are masked as `404 Not Found`.
 
 ## Conversion Endpoints
 

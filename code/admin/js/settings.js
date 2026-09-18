@@ -72,7 +72,7 @@
     function field(name) { return node(`#settingsForm [name="${name}"]`); }
 
     function fillFields(settings) {
-        ['adminPassword', 'adminDomain', 'adminIp', 'adminPath', 'dbConnection', 'backupDir', 'cachingDir']
+        ['adminPassword', 'adminDomain', 'adminIp', 'adminPath', 'apiKey', 'dbConnection', 'backupDir', 'cachingDir']
             .forEach((name) => { if (field(name)) field(name).value = settings[name] ?? ''; });
         field('adminPassword').value = '';
         field('useUTP').checked = !!settings.useUTP;
@@ -195,7 +195,7 @@
 
     function collectSettings() {
         const settings = { ...state.settings };
-        ['adminPassword', 'adminDomain', 'adminIp', 'adminPath', 'dbConnection', 'backupDir', 'cachingDir']
+        ['adminPassword', 'adminDomain', 'adminIp', 'adminPath', 'apiKey', 'dbConnection', 'backupDir', 'cachingDir']
             .forEach((name) => { settings[name] = field(name).value.trim(); });
         settings.useUTP = field('useUTP').checked;
         settings.debug = field('debug').checked;
@@ -228,6 +228,12 @@
         node('#geoBasesVersion').textContent = `Installed bases: ${result.updates?.geoBases || 'unknown'}`;
         node('#settingsLoading').hidden = true;
         node('#settingsForm').hidden = false;
+    }
+
+    function generateManagementApiKey() {
+        const bytes = new Uint8Array(32);
+        crypto.getRandomValues(bytes);
+        return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
     }
 
     function randomStorageName(used) {
@@ -609,6 +615,27 @@
             input.value = configuredIps.join(', ');
             input.classList.remove('is-invalid');
             input.focus();
+        });
+        node('#generateApiKey')?.addEventListener('click', () => {
+            const input = field('apiKey');
+            if (!input) return;
+            input.value = generateManagementApiKey();
+            input.classList.remove('is-invalid');
+            input.focus();
+        });
+        node('#copyApiKey')?.addEventListener('click', async () => {
+            const value = field('apiKey')?.value.trim() || '';
+            if (value === '') {
+                setStatus('Generate a management API key first.', 'error');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(value);
+                setStatus('Management API key copied.', 'success');
+            } catch (_error) {
+                field('apiKey').select();
+                setStatus('Copy the selected key with Ctrl+C.', 'error');
+            }
         });
         node('#closeSettings')?.addEventListener('click', () => $.modal.close());
         node('#cancelSettings')?.addEventListener('click', () => $.modal.close());

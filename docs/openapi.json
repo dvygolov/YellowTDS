@@ -2,17 +2,57 @@
   "openapi": "3.0.3",
   "info": {
     "title": "YellowTDS Runtime API",
-    "version": "1.0.0",
-    "description": "Public runtime endpoints for conversion postbacks and optional website status tracking."
+    "version": "1.1.0",
+    "description": "Runtime endpoints for conversion postbacks, website events, and the hidden management API."
   },
   "servers": [
     { "url": "/" }
   ],
   "tags": [
     { "name": "Conversions" },
-    { "name": "Events" }
+    { "name": "Events" },
+    { "name": "Management" }
   ],
   "paths": {
+    "/api/manage.php": {
+      "post": {
+        "tags": ["Management"],
+        "summary": "Management API gateway",
+        "description": "POST JSON with an action. Authenticate with header X-Ytds-Key, Authorization Bearer, or JSON key. The key is configured in Settings → Security. An empty key disables the API. Missing or invalid keys and non-POST methods return 404 Not Found unless Debug mode is on.",
+        "parameters": [
+          {
+            "name": "X-Ytds-Key",
+            "in": "header",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Global management API key."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ManagementRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Action succeeded.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ManagementResult" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ManagementRejected" },
+          "401": { "$ref": "#/components/responses/ManagementRejected" },
+          "404": { "description": "Click or campaign not found, or an unauthenticated request masked as Not Found." },
+          "405": { "$ref": "#/components/responses/ManagementRejected" },
+          "422": { "$ref": "#/components/responses/ManagementRejected" }
+        }
+      }
+    },
     "/api/postback.php": {
       "get": {
         "tags": ["Conversions"],
@@ -263,6 +303,41 @@
         "properties": {
           "error": { "type": "string" }
         }
+      },
+      "ManagementRequest": {
+        "type": "object",
+        "required": ["action"],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": ["click.get", "click.update", "cost.distribute", "campaigns.list", "stats.get"]
+          },
+          "key": { "type": "string", "description": "Optional API key if not sent in a header." },
+          "clickid": { "type": "string" },
+          "subid": { "type": "string", "description": "Alias of clickid." },
+          "params": {
+            "type": "object",
+            "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+          },
+          "cost": { "type": "number", "minimum": 0 },
+          "campaign_id": { "type": "integer", "minimum": 1 },
+          "from": { "oneOf": [{ "type": "string" }, { "type": "integer" }] },
+          "to": { "oneOf": [{ "type": "string" }, { "type": "integer" }] },
+          "amount": { "type": "number", "minimum": 0 },
+          "columns": { "type": "array", "items": { "type": "string" } },
+          "groupby": { "type": "array", "items": { "type": "string" } },
+          "filters": { "type": "object" }
+        }
+      },
+      "ManagementResult": {
+        "type": "object",
+        "required": ["ok", "code"],
+        "properties": {
+          "ok": { "type": "boolean" },
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "data": { "type": "object" }
+        }
       }
     },
     "responses": {
@@ -295,6 +370,14 @@
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/EventErrorResult" }
+          }
+        }
+      },
+      "ManagementRejected": {
+        "description": "Rejected management request when Debug mode is on, or when a valid key was provided.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ManagementResult" }
           }
         }
       }

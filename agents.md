@@ -59,11 +59,13 @@ code/
 ├── logging.php            — add_log(), add_error_log()
 ├── debug.php              — DebugMethods: замер времени, debug-заголовки
 │
+├── managementapi.php      — Management API: клики, расход, список кампаний, статистика
 ├── api/                   — HTTP API
+│   ├── manage.php         — management API, POST JSON с глобальным apiKey
 │   ├── events.php         — события клиентских скриптов
 │   ├── phpconnect.php     — PHP Connect, POST JSON с api_key
 │   ├── postback.php       — входящие статусы и payout, S2S postbacks
-│   └── updateparams.php   — обновление cost и params клика
+│   └── updateparams.php   — legacy pixel обновления params клика
 │
 ├── js/                    — Клиентские JS-скрипты
 │   ├── index.php          — JS Connect точка входа

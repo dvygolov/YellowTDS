@@ -7,7 +7,7 @@ The **Settings** button in the header opens instance-wide YellowTDS settings. Th
 ## Tabs
 
 - **General** — UTP, debug mode, log retention, the default TDS timezone for new campaigns, and global **Conversion attribution** (`Click time` or `Conversion time`).
-- **Security** — new admin password, admin path, and domain/IP access restrictions.
+- **Security** — new admin password, admin path, domain/IP access restrictions, and the Management API key.
 - **Storage** — SQLite file name, backup folder, and cache root. Cache subfolders use fixed system names and are not shown in the UI. **Randomize main paths** generates new unpredictable names for the database, backup folder, and cache root; the rename is applied after **Save settings**.
 - **Backups** — create Full snapshots with SQLite or faster Quick snapshots without SQLite, then view, restore, or delete them.
 - **Plugins** — currency sources and VPN/proxy detectors, preferred currencies, and the VPN/proxy decision mode. **Any positive** treats a visitor as VPN/proxy when any enabled detector returns a positive result. **Majority** requires positive results from more than half of the detectors that returned a valid response. With one responding detector the modes are equivalent; when every detector fails, YellowTDS treats the visitor as VPN/proxy.
@@ -16,6 +16,8 @@ The **Settings** button in the header opens instance-wide YellowTDS settings. Th
 ![Security settings tab](../assets/screenshots/settings-modal-security.png)
 
 The **TDS timezone** selector keeps the IANA identifier and shows its current UTC offset, for example `Europe/Samara (UTC+04:00)`. The offset can change with daylight-saving rules.
+
+**Management API key** on the **Security** tab enables `api/manage.php`. An empty field disables the API. **Generate** creates a new key, **Copy** copies it, and **Save settings** applies it. Requests without this key return `404 Not Found` unless Debug mode is on. The campaign PHP Connect key and postback `pbkey` are separate secrets.
 
 On the **Security** tab, the server-detected current domain and IP are shown below **Allowed admin domain** and **Allowed admin IPs**. **Allowed admin IPs** accepts multiple IPv4 and IPv6 addresses in one comma-separated line, for example `198.51.100.10, 203.0.113.15, 2001:db8::10`; access is allowed from any address in the list. An empty field disables the IP restriction. **Add current IP** appends the detected address with a comma only when the list is not empty and does not add a duplicate. **Add current domain** inserts the current domain without a port number. On the **Plugins** tab, every plugin has an explicit switch and an **Enabled** or **Disabled** label; options belonging to a disabled plugin are inactive.
 
