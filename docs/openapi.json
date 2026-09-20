@@ -310,11 +310,12 @@
         "properties": {
           "action": {
             "type": "string",
-            "enum": ["click.get", "click.update", "cost.distribute", "campaigns.list", "stats.get"]
+            "enum": ["click.get", "click.update", "cost.distribute", "campaigns.list", "campaigns.get", "tokens.list", "tokens.values", "stats.get"]
           },
           "key": { "type": "string", "description": "Optional API key if not sent in a header." },
           "clickid": { "type": "string" },
           "subid": { "type": "string", "description": "Alias of clickid." },
+          "field": { "type": "string", "description": "Token (click URL parameter) name for tokens.values." },
           "params": {
             "type": "object",
             "additionalProperties": { "type": ["string", "number", "boolean", "null"] }

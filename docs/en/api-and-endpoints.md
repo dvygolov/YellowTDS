@@ -22,6 +22,9 @@ The JSON body must include `action`:
 - `click.update` — `{clickid, params?, cost?}`. `params` are merged; `cost` replaces the click cost. A `null` param value deletes that token.
 - `cost.distribute` — `{campaign_id, from, to, amount, filters?}`. Splits the amount evenly across matching clicks. `from`/`to` are `YYYY-MM-DD` in the campaign timezone or unix timestamps. Token filter: `{"params":{"utm_campaign":"fb"}}`.
 - `campaigns.list` — `[{id, name}]`
+- `campaigns.get` — `{campaign_id}` → campaign name, domains and timezone
+- `tokens.list` — `{campaign_id?, from, to}` → click URL parameter names usable as tokens
+- `tokens.values` — `{campaign_id, field, from, to}` → distinct token values (for PixelLink broadcasting)
 - `stats.get` — `{campaign_id, from, to, columns?, groupby?, filters?}`. Read-only campaign statistics.
 
 This is not campaign CRUD and does not replace postbacks.

@@ -2419,6 +2419,80 @@ class Db
         return ['updated' => $updated, 'cost_per_click' => $share];
     }
 
+    /**
+     * @return list<string>
+     */
+    public function get_click_param_keys(?int $campaignId, int $startTs, int $endTs): array
+    {
+        $sql = 'SELECT DISTINCT je.key AS key FROM clicks c, json_each(c.params) je '
+            . 'WHERE c.time BETWEEN :start AND :end AND je.key <> \'\'';
+        if ($campaignId !== null) {
+            $sql .= ' AND c.campaign_id = :campaign_id';
+        }
+        $sql .= ' ORDER BY je.key ASC LIMIT 200';
+
+        $db = $this->open_db(true);
+        $stmt = $db->prepare($sql);
+        if ($stmt === false) {
+            add_log('errors', 'Failed to prepare param key query: ' . $db->lastErrorMsg());
+            return [];
+        }
+        $stmt->bindValue(':start', $startTs, SQLITE3_INTEGER);
+        $stmt->bindValue(':end', $endTs, SQLITE3_INTEGER);
+        if ($campaignId !== null) {
+            $stmt->bindValue(':campaign_id', $campaignId, SQLITE3_INTEGER);
+        }
+        $result = $stmt->execute();
+        if ($result === false) {
+            add_log('errors', 'Failed to execute param key query: ' . $db->lastErrorMsg());
+            return [];
+        }
+        $keys = [];
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $key = (string)($row['key'] ?? '');
+            if ($key !== '') {
+                $keys[] = $key;
+            }
+        }
+        return $keys;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function get_distinct_click_param_values(int $campaignId, int $startTs, int $endTs, string $key): array
+    {
+        if (preg_match('/^[A-Za-z0-9_]{1,64}$/', $key) !== 1) {
+            throw new InvalidArgumentException('Invalid token name.');
+        }
+        $path = '$.' . $key;
+        $sql = 'SELECT DISTINCT json_extract(params, :path) AS value FROM clicks '
+            . 'WHERE campaign_id = :campaign_id AND time BETWEEN :start AND :end '
+            . 'AND json_extract(params, :path) IS NOT NULL AND json_extract(params, :path) <> \'\' '
+            . 'ORDER BY value ASC LIMIT 5000';
+
+        $db = $this->open_db(true);
+        $stmt = $db->prepare($sql);
+        if ($stmt === false) {
+            add_log('errors', 'Failed to prepare param value query: ' . $db->lastErrorMsg());
+            return [];
+        }
+        $stmt->bindValue(':path', $path, SQLITE3_TEXT);
+        $stmt->bindValue(':campaign_id', $campaignId, SQLITE3_INTEGER);
+        $stmt->bindValue(':start', $startTs, SQLITE3_INTEGER);
+        $stmt->bindValue(':end', $endTs, SQLITE3_INTEGER);
+        $result = $stmt->execute();
+        if ($result === false) {
+            add_log('errors', 'Failed to execute param value query: ' . $db->lastErrorMsg());
+            return [];
+        }
+        $values = [];
+        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $values[] = (string)($row['value'] ?? '');
+        }
+        return $values;
+    }
+
     public function save_step_event(
         string $clickid,
         int $stepIndex,

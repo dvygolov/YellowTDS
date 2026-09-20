@@ -22,6 +22,9 @@
 - `click.update` — `{clickid, params?, cost?}`. `params` мержатся, `cost` заменяет расход клика. `null` в params удаляет метку.
 - `cost.distribute` — `{campaign_id, from, to, amount, filters?}`. Размазывает сумму поровну по кликам периода. `from`/`to` — `YYYY-MM-DD` в timezone кампании или unix timestamp. Фильтр меток: `{"params":{"utm_campaign":"fb"}}`.
 - `campaigns.list` — `[{id, name}]`
+- `campaigns.get` — `{campaign_id}` → имя, домены и timezone кампании
+- `tokens.list` — `{campaign_id?, from, to}` → имена URL-параметров кликов, которые можно использовать как метки
+- `tokens.values` — `{campaign_id, field, from, to}` → уникальные значения метки (для PixelLink broadcasting)
 - `stats.get` — `{campaign_id, from, to, columns?, groupby?, filters?}`. Обёртка над статистикой кампании.
 
 Это не CRUD кампаний и не замена postback.

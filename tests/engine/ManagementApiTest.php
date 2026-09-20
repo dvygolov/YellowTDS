@@ -24,6 +24,7 @@ final class ManagementApiTest extends TestCase
             true
         );
         $this->campaignSettings['statistics']['timezone'] = 'UTC';
+        $this->campaignSettings['domains'] = ['alpha.example', 'www.alpha.example'];
         $this->db->seedCampaign(1, 'Alpha', $this->campaignSettings);
         $this->db->seedCampaign(2, 'Beta', $this->campaignSettings);
         $this->db->seedClicks([
@@ -214,6 +215,50 @@ final class ManagementApiTest extends TestCase
             $this->db
         );
         $this->assertSame(200, $jsonKey['status']);
+    }
+
+    public function testCampaignGetReturnsDomains(): void
+    {
+        $result = $this->call(['action' => 'campaigns.get', 'campaign_id' => 1]);
+        $this->assertSame(200, $result['status']);
+        $this->assertSame('Alpha', $result['body']['data']['name']);
+        $this->assertSame(['alpha.example', 'www.alpha.example'], $result['body']['data']['domains']);
+        $this->assertSame('UTC', $result['body']['data']['timezone']);
+
+        $missing = $this->call(['action' => 'campaigns.get', 'campaign_id' => 999]);
+        $this->assertSame(404, $missing['status']);
+        $this->assertSame('campaign_not_found', $missing['body']['code']);
+    }
+
+    public function testTokensListAndValues(): void
+    {
+        $list = $this->call([
+            'action' => 'tokens.list',
+            'campaign_id' => 1,
+            'from' => 1700000000,
+            'to' => 1700007200,
+        ]);
+        $this->assertSame(200, $list['status']);
+        $this->assertSame(['source', 'utm_campaign'], $list['body']['data']['tokens']);
+
+        $values = $this->call([
+            'action' => 'tokens.values',
+            'campaign_id' => 1,
+            'field' => 'utm_campaign',
+            'from' => 1700000000,
+            'to' => 1700007200,
+        ]);
+        $this->assertSame(200, $values['status']);
+        $this->assertSame(['fb', 'tt'], $values['body']['data']['values']);
+
+        $sourceValues = $this->call([
+            'action' => 'tokens.values',
+            'campaign_id' => 1,
+            'field' => 'param.source',
+            'from' => 1700000000,
+            'to' => 1700007200,
+        ]);
+        $this->assertSame(['ads'], $sourceValues['body']['data']['values']);
     }
 
     public function testLegacyUpdateparamsHidesErrorsOutsideDebug(): void

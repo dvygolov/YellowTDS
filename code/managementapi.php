@@ -7,6 +7,9 @@ final class ManagementApi
         'click.update',
         'cost.distribute',
         'campaigns.list',
+        'campaigns.get',
+        'tokens.list',
+        'tokens.values',
         'stats.get',
     ];
 
@@ -112,6 +115,9 @@ final class ManagementApi
                 'click.update' => $this->clickUpdate($request),
                 'cost.distribute' => $this->costDistribute($request),
                 'campaigns.list' => $this->campaignsList(),
+                'campaigns.get' => $this->campaignsGet($request),
+                'tokens.list' => $this->tokensList($request),
+                'tokens.values' => $this->tokensValues($request),
                 'stats.get' => $this->statsGet($request),
             };
         } catch (InvalidArgumentException $e) {
@@ -252,6 +258,80 @@ final class ManagementApi
             ];
         }
         return $this->ok(['campaigns' => $campaigns]);
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     * @return array{status: int, body: array<string, mixed>}
+     */
+    private function campaignsGet(array $request): array
+    {
+        $campaignId = $this->readCampaignId($request);
+        if ($campaignId === null) {
+            return $this->fail(400, 'missing_campaign_id', 'Missing campaign_id.');
+        }
+        $name = $this->db->get_campaign_name($campaignId);
+        if ($name === '') {
+            return $this->fail(404, 'campaign_not_found', 'Campaign not found.');
+        }
+        $settings = $this->db->get_campaign_settings($campaignId);
+        return $this->ok([
+            'id' => $campaignId,
+            'name' => $name,
+            'domains' => $this->normalizeDomains(is_array($settings) ? ($settings['domains'] ?? []) : []),
+            'timezone' => $this->campaignTimezone($campaignId),
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     * @return array{status: int, body: array<string, mixed>}
+     */
+    private function tokensList(array $request): array
+    {
+        $campaignId = $this->readCampaignId($request);
+        if ($campaignId !== null && $this->db->get_campaign_name($campaignId) === '') {
+            return $this->fail(404, 'campaign_not_found', 'Campaign not found.');
+        }
+        $timezone = $campaignId !== null ? $this->campaignTimezone($campaignId) : (string)($this->settings['timezone'] ?? 'UTC');
+        [$startTs, $endTs] = $this->readTimeRange($request, $timezone);
+        return $this->ok([
+            'campaign_id' => $campaignId,
+            'from' => $startTs,
+            'to' => $endTs,
+            'tokens' => $this->db->get_click_param_keys($campaignId, $startTs, $endTs),
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $request
+     * @return array{status: int, body: array<string, mixed>}
+     */
+    private function tokensValues(array $request): array
+    {
+        $campaignId = $this->readCampaignId($request);
+        if ($campaignId === null) {
+            return $this->fail(400, 'missing_campaign_id', 'Missing campaign_id.');
+        }
+        if ($this->db->get_campaign_name($campaignId) === '') {
+            return $this->fail(404, 'campaign_not_found', 'Campaign not found.');
+        }
+        $field = trim((string)($request['field'] ?? ''));
+        if (str_starts_with($field, 'param.')) {
+            $field = substr($field, 6);
+        }
+        if (preg_match('/^[A-Za-z0-9_]{1,64}$/', $field) !== 1) {
+            return $this->fail(422, 'invalid_request', 'field must be a token name.');
+        }
+        $timezone = $this->campaignTimezone($campaignId);
+        [$startTs, $endTs] = $this->readTimeRange($request, $timezone);
+        return $this->ok([
+            'campaign_id' => $campaignId,
+            'field' => $field,
+            'from' => $startTs,
+            'to' => $endTs,
+            'values' => $this->db->get_distinct_click_param_values($campaignId, $startTs, $endTs, $field),
+        ]);
     }
 
     /**
@@ -553,6 +633,28 @@ final class ManagementApi
             return (string)($this->settings['timezone'] ?? 'UTC');
         }
         return $timezone;
+    }
+
+    /**
+     * @param mixed $domains
+     * @return list<string>
+     */
+    private function normalizeDomains(mixed $domains): array
+    {
+        if (!is_array($domains)) {
+            return [];
+        }
+        $normalized = [];
+        foreach ($domains as $domain) {
+            if (is_string($domain) && trim($domain) !== '') {
+                $normalized[] = trim($domain);
+                continue;
+            }
+            if (is_array($domain) && is_string($domain['name'] ?? null) && trim($domain['name']) !== '') {
+                $normalized[] = trim($domain['name']);
+            }
+        }
+        return array_values(array_unique($normalized));
     }
 
     /**
