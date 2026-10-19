@@ -17,7 +17,7 @@ if (__FILE__ === $_SERVER['SCRIPT_FILENAME'] ||
 }
 
 define("YTDS_API_KEY", "test");
-define("YTDS_API_URL", "http://localhost:8080/fromfolder/api/phpconnect.php");
+define("YTDS_API_URL", "http://localhost:8080/api/phpconnect.php");
 define("YTDS_DEBUG", true);
 
 class YellowTDSClient

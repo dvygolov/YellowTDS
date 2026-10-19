@@ -1426,11 +1426,12 @@ global $c, $db, $campId;
             const templateId = kind === 'submit' ? 'script-rule-template-submit' : 'script-rule-template-next';
             return document.getElementById(templateId).innerHTML
                 .replaceAll('__KIND__', kind)
+                .replaceAll('__FIELD__', kind === 'submit' ? 'submitredirect' : 'nextredirect')
                 .replaceAll('__INDEX__', String(index));
         }
 
         function updateScriptRuleNames(kind) {
-            document.querySelectorAll(`[data-rule-kind="${kind}"]`).forEach((item, index) => {
+            document.querySelectorAll(`.script-rule-item[data-rule-kind="${kind}"]`).forEach((item, index) => {
                 item.querySelectorAll('input[name], select[name]').forEach((input) => {
                     input.name = input.name.replace(/rules\[\d+\]/, `rules[${index}]`);
                 });
